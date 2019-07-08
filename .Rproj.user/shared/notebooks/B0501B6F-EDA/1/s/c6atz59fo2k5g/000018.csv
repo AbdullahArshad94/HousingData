@@ -1,0 +1,2 @@
+"0","Bsmt <- subset(raw_data, is.na(raw_data$BsmtExposure))"
+"0","Bsmt"

@@ -1,0 +1,7 @@
+"0","v = 1"
+"0","while (v<1461){"
+"0","  if (is.na(modified_data$LotFrontage[v])){"
+"0","    modified_data$LotFrontage[v] = 0"
+"0","  }"
+"0","  v = v + 1"
+"0","}"

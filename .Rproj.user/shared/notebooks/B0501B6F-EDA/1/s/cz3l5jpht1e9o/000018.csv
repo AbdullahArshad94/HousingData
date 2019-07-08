@@ -1,0 +1,2 @@
+"0","outlier_sales <- subset(raw_data, raw_data$SalePrice > 340000)"
+"0","outlier_sales"

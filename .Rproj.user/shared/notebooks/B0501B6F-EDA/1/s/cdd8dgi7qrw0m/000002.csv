@@ -1,0 +1,7 @@
+"0","v = 1"
+"0","while (v<1450){"
+"0","  if (is.na(modified_data$FireplaceQu[v])){"
+"0","    modified_data$FireplaceQu[v] = ""NoF"""
+"0","  }"
+"0","  v = v + 1"
+"0","}"

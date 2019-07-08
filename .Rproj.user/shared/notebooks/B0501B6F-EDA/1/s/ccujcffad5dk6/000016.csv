@@ -1,0 +1,2 @@
+"0","outlier_sales <- subset(modified_data, modified_data$SalePrice > 340000)"
+"0","outlier_sales[order(outlier_sales$SalePrice),]"

@@ -1,0 +1,2 @@
+"0","Bsmt2 <- subset(modified_data, modified_data$BsmtFinType2 == ""NoB"")"
+"0","Bsmt2"

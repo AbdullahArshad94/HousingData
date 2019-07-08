@@ -1,2 +1,5 @@
-# HousingData
-Capstone project
+# Iowa Housing Data
+
+This is my Capstone project.
+
+

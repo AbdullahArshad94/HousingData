@@ -1,0 +1,4 @@
+"0","multiplier <- myhist$counts / myhist$density"
+"0","mydensity <- density(raw_data$SalePrice)"
+"0","mydensity$y <- mydensity$y * multiplier[1]"
+"0","plot(myhist, xlab = ""Sales Price"", main = ""Histogram of Sales"")"

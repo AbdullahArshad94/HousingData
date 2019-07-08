@@ -1,0 +1,11 @@
+"0","x = 1"
+"0","cat(""---NULL COUNT---\n"")"
+"1","---NULL COUNT---
+"
+"0","while (x<81){"
+"0","  if(sum(is.na((modified_data[x]))>0)){"
+"0","    cat(""Number of nulls in "",(colnames(modified_data[x])), "": "")"
+"0","    cat(sum(is.na(modified_data[x])), ""\n"")"
+"0","  }"
+"0","  x = x + 1 "
+"0","}"

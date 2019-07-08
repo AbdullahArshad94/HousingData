@@ -1,0 +1,1 @@
+"0","modified_data <- subset(modified_data, !is.na(raw_data$MasVnrType)) # we only do it for when one attribute isnt na, because the other overlaps."
