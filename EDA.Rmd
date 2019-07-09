@@ -16,10 +16,18 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("ggplot2")
 #install.packages("corrplot")
 #install.packages("ggcorrplot")
+#install.packages("klaR")
+#install.packages("cluster")
+#install.packages("fpc")
+install.packages("class")
 ```
 
 ```{r}
-##library("plyr")
+library("class")
+library("fpc")
+library("cluster")
+library("plyr")
+library("klaR")
 library("ggplot2")
 library("e1071")
 library("corrplot")
@@ -2049,7 +2057,7 @@ colname[toremove]
 print("The following attributes have outliers that need to be addressed:")
 colname[outers]
 ```
-# 1.1.6 Low variance Filter and correlation of our numeric attributes, outlier handling and Feature engineering
+# 1.1.5 Low variance Filter and correlation of our numeric attributes, outlier handling and Feature engineering
 
 We will be working on checking the vairance of each variable. We want high variance.
 ```{r}
@@ -2168,14 +2176,14 @@ qplot(temp$ExterQual,temp$SalePrice, data = temp, colour= temp$BsmtQual)
 
 
 ```{r}
-
-ggplot(data = temp, aes(x=temp$ExterQual, y=temp$SalePrice)) + geom_count(aes(fill = factor(temp$ExterQual) )) 
-ggplot(data = temp, aes(x=temp$KitchenQual, y=temp$SalePrice)) + geom_count(aes(fill = factor(temp$KitchenQual) )) 
-ggplot(data = temp, aes(x=temp$BsmtQual, y=temp$SalePrice)) + geom_count(aes(fill = factor(temp$BsmtQual) ))
-ggplot(data = temp, aes(x=temp$FireplaceQu, y=temp$SalePrice)) + geom_count(aes(fill = factor(temp$FireplaceQu) ))
-ggplot(data = temp, aes(x=temp$Fireplace, y=temp$SalePrice)) + geom_count(aes(fill = (temp$Fireplace) ))
-ggplot(data = temp, aes(x=temp$PoolArea, y=temp$SalePrice)) + geom_count(aes(fill = (temp$PoolArea) ))
-ggplot(data = temp, aes(x=temp$MiscVal, y=temp$SalePrice)) + geom_count(aes(fill = (temp$MiscVal) ))
+# Very imporant comparisons, used to make decisions. Great to find patterns
+ggplot(data = temp, aes(x=temp$ExterQual, y=temp$SalePrice)) + geom_count(aes( factor(temp$ExterQual) )) 
+ggplot(data = temp, aes(x=temp$KitchenQual, y=temp$SalePrice)) + geom_count(aes(factor(temp$KitchenQual) )) 
+ggplot(data = temp, aes(x=temp$BsmtQual, y=temp$SalePrice)) + geom_count(aes(factor(temp$BsmtQual) ))
+ggplot(data = temp, aes(x=temp$FireplaceQu, y=temp$SalePrice)) + geom_count(aes(factor(temp$FireplaceQu) ))
+ggplot(data = temp, aes(x=temp$Fireplace, y=temp$SalePrice)) + geom_count(aes((temp$Fireplace) ))
+ggplot(data = temp, aes(x=temp$PoolArea, y=temp$SalePrice)) + geom_count(aes((temp$PoolArea) ))
+ggplot(data = temp, aes(x=temp$MiscVal, y=temp$SalePrice)) + geom_count(aes((temp$MiscVal) ))
 
 ggplot(data = temp, aes(x=temp$BsmtFinSF1, y=temp$SalePrice)) + geom_count(aes((temp$BsmtFinSF1) ))
 ggplot(data = temp, aes(x=temp$BsmtFinSF2, y=temp$SalePrice)) + geom_count(aes((temp$BsmtFinSF2) ))
@@ -2243,7 +2251,7 @@ temp = subset(temp, !(temp$Id %in% flattened_outlier))
 outlier_lowQualFinSF = 0
 #removed misc
 outlier_miscVal = 0
-#removed OpenPorch removed
+#removed OpenPorch
 outlier_openPorch = 0
 #removed pool
 outlier_poolarea = 0
@@ -2260,14 +2268,75 @@ outlier_x2stFlrSF= 0
 #removed 3Ss
 outlier_X3Ss= 0
 
-#I will allow these outliers.
+print("it is a good idea we waited to remove the outliers, otherwise we would have lost a lot of observations only to remove the attributes later")
+
+#I will allow this outliers:
 #outlier_yearbuilt 
+```
+
+```{r}
+#after all our intial analysis, we can set the data back to our original name
+modified_data = temp
+modified_data = subset(modified_data, select=-c(SalePrice))
+modified_data$SalePrice = temp$SalePrice
 ```
 
 #2 - EDA
 
-2.1 - Normalization
+#2.1 Normalization
 
 ```{r}
+# Our Normalizing technique
+normalize <- function(x) {
+  if (is.numeric(x)){
+  return ((x - min(x)) / (max(x) - min(x))) }
+  else{
+    return (x)
+  }
+}
+data_norm = as.data.frame(lapply(modified_data[2:39], normalize))
+data_norm <- cbind(modified_data$SalePrice, data_norm)
+```
 
+#2.2 Clustering
+```{r}
+numsonly <- unlist(lapply(modified_data, is.numeric))
+numarray = temp[,numsonly]
+numarray = subset(numarray, select = -c(Id))
+fit = kmeans(numarray,4)
+plotcluster(numarray,fit$cluster)
+
+#str(fit)
+
+fit = kmodes(numarray, 4)
+plotcluster(numarray,fit$cluster)
+
+# It is not meaningful to have clustering for categorical variables. I did only numerical values.
+```
+In fact, these clusters are not meaningful for the numerical only attributes, either! It would have been a better tool to be used in EDA of 2-5 variables perhaps, but I will do without it.
+
+# We are now into our Deisgn and Testing stage!!!
+
+#3 - Experimental Design and Modeling 
+
+#3.0 Training and test set Split
+
+```{r}
+set.seed(1)
+#Splitting training to 80%, test to 20%
+index <- sample(1:nrow(data_norm), 0.80 *nrow(data_norm))
+data_train <- data_norm[index,]
+data_test <- data_norm[-index,]
+```
+#3.1 KNN 
+```{r}
+#Our label is the Sales price, in col 1
+trainlabel <- data_train[,1]
+testlabel <- data_test[,1]
+
+#Applying KNN
+test_pred <- knn(train = data_train[,2:39], test = data_test[,2:39],cl = data_train[,1], k=9)
+
+#Creating accuracy matrix
+CrossTable(x=testlabel, y=test_pred, prop.chisq=FALSE)
 ```
