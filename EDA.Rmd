@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("e1071")
 #install.packages("ggplot2")
 #install.packages("corrplot")
-#install.packages("PerformanceAnalytics")
+#install.packages("ggcorrplot")
 ```
 
 ```{r}
@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library("ggplot2")
 library("e1071")
 library("corrplot")
-library("PerformanceAnalytics")
+library("ggcorrplot")
 entropy = function(cat.vect){
   px  = table(cat.vect)/length(cat.vect)
   lpx = log(px, base=2)
@@ -2049,22 +2049,225 @@ colname[toremove]
 print("The following attributes have outliers that need to be addressed:")
 colname[outers]
 ```
-# 1.1.6 Low variance Filter
+# 1.1.6 Low variance Filter and correlation of our numeric attributes, outlier handling and Feature engineering
 
 We will be working on checking the vairance of each variable. We want high variance.
+```{r}
+#The ruleset I am emplaying is if there is one variable with over 65% of the observations or 2 with over 70%, I shall remove the attribute based of low variance.  
+temp[toremove] <- NULL
+```
+We shall look at the matrix of the numeric attributes and remove any that have higher than 0.75 correlation with the dependent variable
 ```{r}
 #Subsetting for numeric only
 nums <- unlist(lapply(temp, is.numeric))
 numONLY = temp[,nums]
 aa<-cor(numONLY)
+ggcorrplot(aa)
+#We are only intrested in the Sales price of the matrix
+aa[,26]
+```
+There are some conclusions we can make.
 
-cortesting<-(temp[,outers])
-cortesting$SalePrice <- temp$SalePrice
-ab<-cor(cortesting)
-ab[21]
+```{r}
+#Might be better for us to remove 4 attributes and create a fuller 1 attribute
+temp$HouseArea <- temp$TotalBsmtSF + temp$X1stFlrSF + temp$X2ndFlrSF
 
-#The ruleset I am emplaying is if there is one variable with over 65% of the observations or 2 with over 70%, I shall remove the attribute based of low variance.  
-temp[toremove] <- NULL
+# Undo some work from before for this stage.
+temp$FullBath <- as.numeric(temp$FullBath)
+temp$BsmtFullBath <- as.numeric(temp$BsmtFullBath)
+temp$HalfBath <- as.numeric(temp$HalfBath)
+temp$BsmtHalfBath <- as.numeric(temp$BsmtHalfBath)
 
+# Why keep so many bathroom attributes. Let us condense instead.
+temp$TotalBath <- temp$FullBath + 0.5*(temp$HalfBath) + temp$BsmtFullBath + 0.5*as.numeric(temp$BsmtHalfBath)
+# Same with porch
+temp$TotalPorchSF <- temp$OpenPorchSF + temp$EnclosedPorch + temp$X3SsnPorch + temp$ScreenPorch + temp$WoodDeckSF
+# Lets include the garage now
+temp$TotalArea <-temp$HouseArea + temp$GarageArea
+#We also know that total basement SF = BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF. WHy not remove it 
+#Another reason so remove total basement SF is because of its high correlation to 1stFlrSF
+temp$TotalBsmtSF <- NULL
+#Do not need house area, if we have total area
+temp$HouseArea <- NULL
+```
+We will remove OverallQual and GrLiveArea due to its high correlation. (above our 0.7 threshold)
+GarageCars and Garagearea also have high correlation, and they themselves are highly correlated (0.88), so I shall remove one because they pretty much provide the same amount of information to the dependent variable. I pick Garagearea to remove because there are already a lot of area variables.
+
+Also lets remove the attributes used in the addition, as well.
+```{r}
+temp$OverallQual <- NULL
+temp$GrLivArea <- NULL
+temp$GarageArea <- NULL
+
+
+temp$X1stFlrSF <-NULL
+temp$X2ndFlrSF <- NULL
+temp$FullBath <- NULL
+temp$HalfBath <-NULL
+temp$BsmtFullBath <- NULL
+temp$BsmtHalfBath <- NULL
+
+temp$OpenPorchSF <- NULL
+temp$EnclosedPorch <- NULL
+temp$X3SsnPorch <- NULL
+temp$ScreenPorch <- NULL
+temp$WoodDeckSF <- NULL
+temp$PoolArea <- NULL
+```
+After our reduction, lets see our variables
+```{r}
+colname_new <- colnames(temp)
+colname_new
+```
+We removed 25 variables so far, and added 3
+
+```{r}
+#Only intrested in the attributes we added, but lets take a look
+nums <- unlist(lapply(temp, is.numeric))
+numONLY = temp[,nums]
+aa<-cor(numONLY)
+ggcorrplot(aa)
+#We are only intrested in the Sales price of the matrix
+aa[,15]
+diag(var(numONLY))
+```
+As assumed, the areas will be correlated with one another, highly. Also the sales price is largely correlated with areas, bathrooms. I know that these areas are highly correlated but because we added so many variables into it, I will not be removign them.
+
+Finally, we will look at addressing the outliers. I was holding off for as long as I could because they may potentially be eliminated with the removal of some of the attributes, but we might be at a point where no more attributes are to be taken out.
+
+#1.2 Bi variant analysis
+Lets look for some patterns. A lot of it was discovered from the correlation table, but lets reillustrate some of it here. Truth be told, in our univariant work, we looked at some intresting combinations with the Sales price. I will re highlight these and look at some other combinations.
+
+```{r}
+#Lets look at Lot
+plot(temp$LotFrontage, temp$LotArea)
+ggplot(data = temp, aes(y=temp$LotFrontage, x=temp$LotShape)) + geom_jitter(aes((temp$LotShape) ))
+```
+Nothing meaningful
+
+```{r}
+plot(temp$TotalBath,temp$SalePrice)
+plot(temp$TotalArea,temp$SalePrice)
+plot(temp$GarageCars, temp$SalePrice)
+plot(temp$YearBuilt, temp$SalePrice)
+plot(temp$YearRemodAdd, temp$SalePrice)
+#These attributes had the highest correlation with sales price. It is evident in these plot. 
+```
+```{r}
+#Something else we can see from the last prompts is that larger homes would have more bathrooms, and in turn higher prices. 
+qplot(temp$TotalArea,temp$SalePrice, data = temp, colour= temp$TotalBath)
+#Larger homes would also have better quality fireplaces.
+qplot(temp$TotalArea,temp$SalePrice, data = temp, colour= temp$FireplaceQu)
+#And better exterior quality
+qplot(temp$TotalArea,temp$SalePrice, data = temp, colour= temp$ExterQual)
+#And better Basement quality
+qplot(temp$TotalArea,temp$SalePrice, data = temp, colour= temp$BsmtQual)
+#QUality in general makes for a better house price
+qplot(temp$ExterQual,temp$SalePrice, data = temp, colour= temp$BsmtQual)
 ```
 
+
+```{r}
+
+ggplot(data = temp, aes(x=temp$ExterQual, y=temp$SalePrice)) + geom_count(aes(fill = factor(temp$ExterQual) )) 
+ggplot(data = temp, aes(x=temp$KitchenQual, y=temp$SalePrice)) + geom_count(aes(fill = factor(temp$KitchenQual) )) 
+ggplot(data = temp, aes(x=temp$BsmtQual, y=temp$SalePrice)) + geom_count(aes(fill = factor(temp$BsmtQual) ))
+ggplot(data = temp, aes(x=temp$FireplaceQu, y=temp$SalePrice)) + geom_count(aes(fill = factor(temp$FireplaceQu) ))
+ggplot(data = temp, aes(x=temp$Fireplace, y=temp$SalePrice)) + geom_count(aes(fill = (temp$Fireplace) ))
+ggplot(data = temp, aes(x=temp$PoolArea, y=temp$SalePrice)) + geom_count(aes(fill = (temp$PoolArea) ))
+ggplot(data = temp, aes(x=temp$MiscVal, y=temp$SalePrice)) + geom_count(aes(fill = (temp$MiscVal) ))
+
+ggplot(data = temp, aes(x=temp$BsmtFinSF1, y=temp$SalePrice)) + geom_count(aes((temp$BsmtFinSF1) ))
+ggplot(data = temp, aes(x=temp$BsmtFinSF2, y=temp$SalePrice)) + geom_count(aes((temp$BsmtFinSF2) ))
+
+ggplot(data = temp, aes(x=temp$BsmtFinType2, y=temp$SalePrice)) + geom_count(aes((temp$BsmtFinType2) )) #This got through the cracks, it should have been removed.
+
+ggplot(data = temp, aes(x=temp$MasVnrArea, y=temp$SalePrice)) + geom_count(aes((temp$MasVnrArea) ))
+ggplot(data = temp, aes(x=temp$MasVnrType, y=temp$SalePrice)) + geom_count(aes((temp$MasVnrType) ))
+
+ggplot(data = temp, aes(x=temp$BsmtUnfSF, y=temp$SalePrice)) + geom_count(aes((temp$BsmtUnfSF) ))
+mean(temp$BsmtUnfSF)
+nrow(temp[temp$BsmtUnfSF<200,])#I decide to keep this, attribute
+
+
+ggplot(data = temp, aes(x=temp$LowQualFinSF, y=temp$SalePrice)) + geom_count(aes((temp$LowQualFinSF) ))
+
+ggplot(data = temp, aes(x=temp$GarageCars, y=temp$SalePrice)) + geom_count(aes((temp$GarageCars) ))
+
+ggplot(data = temp, aes(x=temp$LotFrontage, y=temp$SalePrice)) + geom_count(aes((temp$LotFrontage) ))
+nrow(temp[temp$LotFrontage<10,])#I decide to keep this, attribute
+
+ggplot(data = temp, aes(x=temp$tot, y=temp$SalePrice)) + geom_count(aes((temp$LotFrontage) ))
+
+
+mean(temp$PoolArea)
+mean(temp$MiscVal)
+mean(as.numeric(temp$Fireplaces))
+#After observing the graphics and looking into variances and mean, these need to be removed. The means alone tell a story of how skewed of a picture these give. Because of a lack of normalization, means can show a picture as well. 
+temp$Fireplace <- NULL 
+temp$PoolArea <- NULL 
+temp$MiscVal <- NULL 
+temp$BsmtFinSF2 <- NULL
+temp$MasVnrArea <- NULL
+temp$LowQualFinSF <-NULL
+```
+
+#1.3 Remove those outlier!
+I saved this for as late as possible. I wanted to see if most of the attributes will be eliminated before we remove observations due to outliers.
+
+```{r}
+#bsmtfinsf1
+flattened_outlier = unlist(outlier_bsmtFinSF1[1], use.names = FALSE)
+temp = subset(temp, !(temp$Id %in% flattened_outlier))
+#removed bsmtfinsf2
+outlier_bsmtFinSF2 = 0
+#removed masvnrarea
+outlier_masVnrArea = 0
+#bsmtUnfSF
+flattened_outlier = unlist(outlier_bsmtUnfSF[1], use.names = FALSE)
+temp = subset(temp, !(temp$Id %in% flattened_outlier))
+#removed garage area
+outlier_garageArea = 0
+#removed garage car
+flattened_outlier = unlist(outlier_garagecars[1], use.names = FALSE)
+temp = subset(temp, !(temp$Id %in% flattened_outlier))
+#removed grlivarea
+outlier_grLivArea = 0
+#lotarea
+flattened_outlier = unlist(outlier_lotArea[1], use.names = FALSE)
+temp = subset(temp, !(temp$Id %in% flattened_outlier))
+#lotfrontage
+flattened_outlier = unlist(outlier_lotFrontage[1], use.names = FALSE)
+temp = subset(temp, !(temp$Id %in% flattened_outlier))
+#removed lowqualfin
+outlier_lowQualFinSF = 0
+#removed misc
+outlier_miscVal = 0
+#removed OpenPorch removed
+outlier_openPorch = 0
+#removed pool
+outlier_poolarea = 0
+#removed screen porch 
+outlier_screenPorch= 0
+#removed total Basement SF 
+outlier_totalBsmtSF= 0
+#removed wood deck 
+outlier_woodDeck= 0
+#removed 1st flr sf 
+outlier_x1stFlrSF= 0
+#removed 2nd flr sf 
+outlier_x2stFlrSF= 0
+#removed 3Ss
+outlier_X3Ss= 0
+
+#I will allow these outliers.
+#outlier_yearbuilt 
+```
+
+#2 - EDA
+
+2.1 - Normalization
+
+```{r}
+
+```

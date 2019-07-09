@@ -1,0 +1,2 @@
+"0","#The ruleset I am emplaying is if there is one variable with over 65% of the observations or 2 with over 70%, I shall remove the attribute based of low variance.  "
+"0","temp[toremove] <- NULL"

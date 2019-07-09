@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("e1071")
 #install.packages("ggplot2")
 #install.packages("corrplot")
-#install.packages("PerformanceAnalytics")
+#install.packages("ggcorrplot")
 ```
 
 ```{r}
@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library("ggplot2")
 library("e1071")
 library("corrplot")
-library("PerformanceAnalytics")
+library("ggcorrplot")
 entropy = function(cat.vect){
   px  = table(cat.vect)/length(cat.vect)
   lpx = log(px, base=2)
@@ -2049,22 +2049,36 @@ colname[toremove]
 print("The following attributes have outliers that need to be addressed:")
 colname[outers]
 ```
-# 1.1.6 Low variance Filter
+# 1.1.6 Low variance Filter and correlation of our numeric attributes, outlier handling and Feature engineering
 
 We will be working on checking the vairance of each variable. We want high variance.
+```{r}
+#The ruleset I am emplaying is if there is one variable with over 65% of the observations or 2 with over 70%, I shall remove the attribute based of low variance.  
+temp[toremove] <- NULL
+```
+We shall look at the matrix of the numeric attributes and remove any that have higher than 0.75 correlation with the dependent variable
 ```{r}
 #Subsetting for numeric only
 nums <- unlist(lapply(temp, is.numeric))
 numONLY = temp[,nums]
 aa<-cor(numONLY)
+ggcorrplot(aa)
+#We are only intrested in the Sales price of the matrix
+aa[,26]
+```
+We will remove OverallQual and GrLiveArea due to its high correlation.
+```{r}
+temp$OverallQual <- NULL
+temp$GrLivArea <- NULL
+```
+After our reduction, lets see our variables
+```{r}
+colname_new <- colnames(temp)
+colname_new
+```
+We removed 15 attributes
 
-cortesting<-(temp[,outers])
-cortesting$SalePrice <- temp$SalePrice
-ab<-cor(cortesting)
-ab[21]
-
-#The ruleset I am emplaying is if there is one variable with over 65% of the observations or 2 with over 70%, I shall remove the attribute based of low variance.  
-temp[toremove] <- NULL
-
+```{r}
+totalS
 ```
 

@@ -1,0 +1,5 @@
+"0","#Subsetting for numeric only"
+"0","nums <- unlist(lapply(temp, is.numeric))"
+"0","numONLY = temp[,nums]"
+"0","aa<-cor(numONLY)"
+"0","ggcorrplot(aa)"
