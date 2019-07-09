@@ -2328,6 +2328,7 @@ index <- sample(1:nrow(data_norm), 0.80 *nrow(data_norm))
 data_train <- data_norm[index,]
 data_test <- data_norm[-index,]
 ```
+
 #3.1 KNN 
 ```{r}
 #Our label is the Sales price, in col 1
@@ -2335,8 +2336,13 @@ trainlabel <- data_train[,1]
 testlabel <- data_test[,1]
 
 #Applying KNN
-test_pred <- knn(train = data_train[,2:39], test = data_test[,2:39],cl = data_train[,1], k=9)
-
+##test_pred <- knn(train = data_train[,2:39], test = data_test[,2:39],cl = data_train[,1], k=9)
 #Creating accuracy matrix
-CrossTable(x=testlabel, y=test_pred, prop.chisq=FALSE)
+##CrossTable(x=testlabel, y=test_pred, prop.chisq=FALSE)
+```
+Learned that KNN might not be a good suit for someone with categorical data within the DF. We shall need to look at regression.
+
+#3.2 Regression
+```{r}
+
 ```
