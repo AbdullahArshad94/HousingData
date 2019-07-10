@@ -12,18 +12,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ## ===== ===== ===== ===== ===== Capstone Project ===== ===== ===== ===== =====
 
 ```{r}
-#install.packages("e1071")
-#install.packages("ggplot2")
-#install.packages("corrplot")
-#install.packages("ggcorrplot")
-#install.packages("klaR")
-#install.packages("cluster")
-#install.packages("fpc")
-#install.packages("class")
-install.packages("rpart")
-```
-
-```{r}
+install.packages("e1071",repos = "http://cran.us.r-project.org")
+install.packages("ggplot2",repos = "http://cran.us.r-project.org")
+install.packages("corrplot",repos = "http://cran.us.r-project.org")
+install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
+install.packages("klaR",repos = "http://cran.us.r-project.org")
+install.packages("cluster",repos = "http://cran.us.r-project.org")
+install.packages("fpc",repos = "http://cran.us.r-project.org")
+install.packages("class",repos = "http://cran.us.r-project.org")
+install.packages("rpart",repos = "http://cran.us.r-project.org")
 library("rpart")
 library("class")
 library("fpc")
@@ -34,13 +31,8 @@ library("ggplot2")
 library("e1071")
 library("corrplot")
 library("ggcorrplot")
-entropy = function(cat.vect){
-  px  = table(cat.vect)/length(cat.vect)
-  lpx = log(px, base=2)
-  ent = -sum(px*lpx)
-  return(ent)
-}
 ```
+
 
 In this part we shall mostly look to clean our data, which includes: address missing/duplicate values, look for outliers, correct data types , fixing categorical variables, Distribution of variables, Low variance filter.
 
@@ -75,15 +67,6 @@ lines(mydensity)
 
 ```
 We can see that the average sales price of a house is $181k, the distribution of which is skewed to the right. As we can see from the histogram, the right tail is longer and the mass of the concentration of data is to the left of the graph, suggesting a positive skew value. The peak also looks very sharp, assuming a high kurtosis value.
-
-We can measure the Skew
-```{r}
-skew = skewness(raw_data$SalePrice)
-kurt = kurtosis(raw_data$SalePrice)
-
-cat("Skewness: ", skew)
-cat("\nKurtosis: ", kurt)
-```
 
 ```{r}
 boxplot(raw_data$SalePrice)
@@ -2182,8 +2165,8 @@ ggplot(data = temp, aes(x=temp$ExterQual, y=temp$SalePrice)) + geom_count(aes( f
 ggplot(data = temp, aes(x=temp$KitchenQual, y=temp$SalePrice)) + geom_count(aes(factor(temp$KitchenQual) )) 
 ggplot(data = temp, aes(x=temp$BsmtQual, y=temp$SalePrice)) + geom_count(aes(factor(temp$BsmtQual) ))
 ggplot(data = temp, aes(x=temp$FireplaceQu, y=temp$SalePrice)) + geom_count(aes(factor(temp$FireplaceQu) ))
-ggplot(data = temp, aes(x=temp$Fireplace, y=temp$SalePrice)) + geom_count(aes((temp$Fireplace) ))
-ggplot(data = temp, aes(x=temp$PoolArea, y=temp$SalePrice)) + geom_count(aes((temp$PoolArea) ))
+#ggplot(data = temp, aes(x=temp$Fireplace, y=temp$SalePrice)) + geom_count(aes((temp$Fireplace) ))
+qplot(temp$Fireplaces,temp$SalePrice, data = temp)
 ggplot(data = temp, aes(x=temp$MiscVal, y=temp$SalePrice)) + geom_count(aes((temp$MiscVal) ))
 
 ggplot(data = temp, aes(x=temp$BsmtFinSF1, y=temp$SalePrice)) + geom_count(aes((temp$BsmtFinSF1) ))
@@ -2345,7 +2328,7 @@ Learned that KNN might not be a good suit for someone with categorical data with
 
 #3.2 Decision Tree
 ```{r}
-tree = rpart(data_train$'modified_data$SalePrice'~MSSubClass+LotFrontage+LotArea+LotShape+Neighborhood+HouseStyle+OverallCond+YearBuilt+YearRemodAdd+RoofStyle+Exterior1st+Exterior2nd+MasVnrType+ExterQual+ExterCond+Foundation+BsmtQual+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+BsmtUnfSF+HeatingQC+BedroomAbvGr+KitchenAbvGr+KitchenQual+TotRmsAbvGrd+FireplaceQu+GarageType+GarageYrBlt+GarageFinish+GarageCars+MoSold+YrSold+SaleCondition+TotalBath+TotalPorchSF+TotalArea, data_train, method = "class")
+#tree = rpart(data_train$'modified_data$SalePrice'~MSSubClass+LotFrontage+LotArea+LotShape+Neighborhood+HouseStyle+OverallCond+YearBuilt+YearRemodAdd+RoofStyle+Exterior1st+Exterior2nd+MasVnrType+ExterQual+ExterCond+Foundation+BsmtQual+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+BsmtUnfSF+HeatingQC+BedroomAbvGr+KitchenAbvGr+KitchenQual+TotRmsAbvGrd+FireplaceQu+GarageType+GarageYrBlt+GarageFinish+GarageCars+MoSold+YrSold+SaleCondition+TotalBath+TotalPorchSF+TotalArea, data_train, method = "class")
 ```
 
 #3.3 Regression
