@@ -2,7 +2,8 @@
 title: "EDA"
 author: "Abdullah"
 date: "May 8, 2019"
-output: html_document
+output: 
+ word_document: default 
 ---
 
 ```{r setup, include=FALSE}
