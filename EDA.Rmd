@@ -19,10 +19,12 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("klaR")
 #install.packages("cluster")
 #install.packages("fpc")
-install.packages("class")
+#install.packages("class")
+install.packages("rpart")
 ```
 
 ```{r}
+library("rpart")
 library("class")
 library("fpc")
 library("cluster")
@@ -42,8 +44,7 @@ entropy = function(cat.vect){
 
 In this part we shall mostly look to clean our data, which includes: address missing/duplicate values, look for outliers, correct data types , fixing categorical variables, Distribution of variables, Low variance filter.
 
-#0.0
-#Importing data 
+#0.0 - Importing data 
 ```{r}
 raw_data = read.csv2(file='C:\\Users\\Abdullah\\Desktop\\housePrices\\train.csv', header = T, sep = ",", dec = ".",stringsAsFactors = FALSE)
 modified_data = raw_data ## To ensure we do not touch original data, we replicate into another df and use that as modified version
@@ -2342,7 +2343,9 @@ testlabel <- data_test[,1]
 ```
 Learned that KNN might not be a good suit for someone with categorical data within the DF. We shall need to look at regression.
 
-#3.2 Regression
+#3.2 Decision Tree
 ```{r}
-
+tree = rpart(data_train$'modified_data$SalePrice'~MSSubClass+LotFrontage+LotArea+LotShape+Neighborhood+HouseStyle+OverallCond+YearBuilt+YearRemodAdd+RoofStyle+Exterior1st+Exterior2nd+MasVnrType+ExterQual+ExterCond+Foundation+BsmtQual+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+BsmtUnfSF+HeatingQC+BedroomAbvGr+KitchenAbvGr+KitchenQual+TotRmsAbvGrd+FireplaceQu+GarageType+GarageYrBlt+GarageFinish+GarageCars+MoSold+YrSold+SaleCondition+TotalBath+TotalPorchSF+TotalArea, data_train, method = "class")
 ```
+
+#3.3 Regression
