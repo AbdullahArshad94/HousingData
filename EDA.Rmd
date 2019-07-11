@@ -13,25 +13,25 @@ knitr::opts_chunk$set(echo = TRUE)
 ## ===== ===== ===== ===== ===== Capstone Project ===== ===== ===== ===== =====
 
 ```{r}
-install.packages("e1071",repos = "http://cran.us.r-project.org")
-install.packages("ggplot2",repos = "http://cran.us.r-project.org")
-install.packages("corrplot",repos = "http://cran.us.r-project.org")
-install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
-install.packages("klaR",repos = "http://cran.us.r-project.org")
-install.packages("cluster",repos = "http://cran.us.r-project.org")
-install.packages("fpc",repos = "http://cran.us.r-project.org")
-install.packages("class",repos = "http://cran.us.r-project.org")
-install.packages("rpart",repos = "http://cran.us.r-project.org")
-library("rpart")
-library("class")
-library("fpc")
-library("cluster")
-library("plyr")
-library("klaR")
-library("ggplot2")
-library("e1071")
-library("corrplot")
-library("ggcorrplot")
+# install.packages("e1071",repos = "http://cran.us.r-project.org")
+# # install.packages("ggplot2",repos = "http://cran.us.r-project.org")
+# # install.packages("corrplot",repos = "http://cran.us.r-project.org")
+# # install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
+# # install.packages("klaR",repos = "http://cran.us.r-project.org")
+# # install.packages("cluster",repos = "http://cran.us.r-project.org")
+# # install.packages("fpc",repos = "http://cran.us.r-project.org")
+# # install.packages("class",repos = "http://cran.us.r-project.org")
+# # install.packages("rpart",repos = "http://cran.us.r-project.org")
+# library("rpart")
+# library("class")
+# library("fpc")
+# library("cluster")
+# library("plyr")
+# library("klaR")
+# library("ggplot2")
+# library("e1071")
+# library("corrplot")
+# library("ggcorrplot")
 ```
 
 
@@ -2279,7 +2279,7 @@ normalize <- function(x) {
     return (x)
   }
 }
-data_norm = as.data.frame(lapply(modified_data[2:39], normalize))
+data_norm = as.data.frame(lapply(modified_data[2:40], normalize))
 data_norm <- cbind(modified_data$SalePrice, data_norm)
 ```
 
@@ -2329,7 +2329,8 @@ Learned that KNN might not be a good suit for someone with categorical data with
 
 #3.2 Decision Tree
 ```{r}
-#tree = rpart(data_train$'modified_data$SalePrice'~MSSubClass+LotFrontage+LotArea+LotShape+Neighborhood+HouseStyle+OverallCond+YearBuilt+YearRemodAdd+RoofStyle+Exterior1st+Exterior2nd+MasVnrType+ExterQual+ExterCond+Foundation+BsmtQual+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+BsmtUnfSF+HeatingQC+BedroomAbvGr+KitchenAbvGr+KitchenQual+TotRmsAbvGrd+FireplaceQu+GarageType+GarageYrBlt+GarageFinish+GarageCars+MoSold+YrSold+SaleCondition+TotalBath+TotalPorchSF+TotalArea, data_train, method = "class")
+
+tree = rpart(data_train$'modified_data$SalePrice'~MSSubClass+LotFrontage+LotArea+LotShape+Neighborhood+HouseStyle+OverallCond+YearBuilt+YearRemodAdd+RoofStyle+Exterior1st+Exterior2nd+MasVnrType+ExterQual+ExterCond+Foundation+BsmtQual+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+BsmtUnfSF+HeatingQC+BedroomAbvGr+KitchenAbvGr+KitchenQual+TotRmsAbvGrd+FireplaceQu+GarageType+GarageYrBlt+GarageFinish+GarageCars+MoSold+YrSold+SaleCondition+TotalBath+TotalPorchSF+TotalArea, data_train, method = "class")
 ```
 
 #3.3 Regression
