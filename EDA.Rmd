@@ -14,14 +14,20 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 # install.packages("e1071",repos = "http://cran.us.r-project.org")
-# # install.packages("ggplot2",repos = "http://cran.us.r-project.org")
-# # install.packages("corrplot",repos = "http://cran.us.r-project.org")
-# # install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
-# # install.packages("klaR",repos = "http://cran.us.r-project.org")
-# # install.packages("cluster",repos = "http://cran.us.r-project.org")
-# # install.packages("fpc",repos = "http://cran.us.r-project.org")
-# # install.packages("class",repos = "http://cran.us.r-project.org")
-# # install.packages("rpart",repos = "http://cran.us.r-project.org")
+# install.packages("ggplot2",repos = "http://cran.us.r-project.org")
+# install.packages("corrplot",repos = "http://cran.us.r-project.org")
+# install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
+# install.packages("klaR",repos = "http://cran.us.r-project.org")
+# install.packages("cluster",repos = "http://cran.us.r-project.org")
+# install.packages("fpc",repos = "http://cran.us.r-project.org")
+# install.packages("class",repos = "http://cran.us.r-project.org")
+# install.packages("rpart",repos = "http://cran.us.r-project.org")
+# install.packages("cowplot")
+# install.packages("randomForest")
+# install.packages("rpart.plot")
+# library("rpart.plot")
+# library("cowplot")
+# library("randomForest")
 # library("rpart")
 # library("class")
 # library("fpc")
@@ -2281,6 +2287,7 @@ normalize <- function(x) {
 }
 data_norm = as.data.frame(lapply(modified_data[2:40], normalize))
 data_norm <- cbind(modified_data$SalePrice, data_norm)
+colnames(data_norm)[colnames(data_norm)=="modified_data$SalePrice"] <- "SalePrice"
 ```
 
 #2.2 Clustering
@@ -2327,10 +2334,36 @@ testlabel <- data_test[,1]
 ```
 Learned that KNN might not be a good suit for someone with categorical data within the DF. We shall need to look at regression.
 
-#3.2 Decision Tree
+#3.2 Random forest
 ```{r}
+set.seed(42)
 
-tree = rpart(data_train$'modified_data$SalePrice'~MSSubClass+LotFrontage+LotArea+LotShape+Neighborhood+HouseStyle+OverallCond+YearBuilt+YearRemodAdd+RoofStyle+Exterior1st+Exterior2nd+MasVnrType+ExterQual+ExterCond+Foundation+BsmtQual+BsmtExposure+BsmtFinType1+BsmtFinSF1+BsmtFinType2+BsmtUnfSF+HeatingQC+BedroomAbvGr+KitchenAbvGr+KitchenQual+TotRmsAbvGrd+FireplaceQu+GarageType+GarageYrBlt+GarageFinish+GarageCars+MoSold+YrSold+SaleCondition+TotalBath+TotalPorchSF+TotalArea, data_train, method = "class")
+# rf_data = modified_data
+# rf_data$GarageYrBlt = unlist(lapply(modified_data$GarageYrBlt, as.numeric), use.name = FALSE )
+# rf_data = subset(rf_data, select= -c(GarageYrBlt))
+# 
+# rdata_norm = as.data.frame(lapply(rf_data[2:40], normalize))
+# rdata_norm <- cbind(modified_data$SalePrice, rdata_norm)
+# colnames(rdata_norm)[colnames(rdata_norm)=="modified_data$SalePrice"] <- "SalePrice"
+
+#Splitting training to 80%, test to 20%
+# index <- sample(1:nrow(rdata_norm), 0.80 *nrow(rdata_norm))
+# rdata_train <- rdata_norm[index,]
+# rdata_test <- rdata_norm[-index,]
+
+#model = randomForest(rdata_train$SalePrice ~ ., data = rdata_train, proximity = TRUE)
+
+m1 <- rpart(data_train$SalePrice ~ ., data = data_train, method = "anova")
+m1
+rpart.plot(m1, type=2, digits=3, fallen.leaves = TRUE)
+
+p1 <- predict(m1, data_test)
+p1
+
+MAE <- function(actual, predicted){
+  mean(abs(actual- predicted))
+}
+MAE(data_test$SalePrice, p1)
 ```
 
 #3.3 Regression
