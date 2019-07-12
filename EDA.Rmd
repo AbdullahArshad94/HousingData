@@ -13,31 +13,39 @@ knitr::opts_chunk$set(echo = TRUE)
 ## ===== ===== ===== ===== ===== Capstone Project ===== ===== ===== ===== =====
 
 ```{r}
-# install.packages("e1071",repos = "http://cran.us.r-project.org")
-# install.packages("ggplot2",repos = "http://cran.us.r-project.org")
-# install.packages("corrplot",repos = "http://cran.us.r-project.org")
-# install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
-# install.packages("klaR",repos = "http://cran.us.r-project.org")
-# install.packages("cluster",repos = "http://cran.us.r-project.org")
-# install.packages("fpc",repos = "http://cran.us.r-project.org")
-# install.packages("class",repos = "http://cran.us.r-project.org")
-# install.packages("rpart",repos = "http://cran.us.r-project.org")
-# install.packages("cowplot")
-# install.packages("randomForest")
-# install.packages("rpart.plot")
-# library("rpart.plot")
-# library("cowplot")
-# library("randomForest")
-# library("rpart")
-# library("class")
-# library("fpc")
-# library("cluster")
-# library("plyr")
-# library("klaR")
-# library("ggplot2")
-# library("e1071")
-# library("corrplot")
-# library("ggcorrplot")
+install.packages("e1071",repos = "http://cran.us.r-project.org")
+install.packages("ggplot2",repos = "http://cran.us.r-project.org")
+install.packages("corrplot",repos = "http://cran.us.r-project.org")
+install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
+install.packages("klaR",repos = "http://cran.us.r-project.org")
+install.packages("cluster",repos = "http://cran.us.r-project.org")
+install.packages("fpc",repos = "http://cran.us.r-project.org")
+install.packages("class",repos = "http://cran.us.r-project.org")
+install.packages("rpart",repos = "http://cran.us.r-project.org")
+install.packages("cowplot")
+install.packages("randomForest")
+install.packages("rpart.plot")
+install.packages("tree",repos = "http://cran.us.r-project.org")
+library("tree")
+library("rpart.plot")
+library("cowplot")
+library("randomForest")
+library("rpart")
+library("class")
+library("fpc")
+library("cluster")
+library("plyr")
+library("klaR")
+library("ggplot2")
+library("e1071")
+library("corrplot")
+library("ggcorrplot")
+MAE <- function(actual, predicted){
+  mean(abs(actual- predicted))
+}
+RMSE <- function(actual, predicted){
+  sqrt(mean((predicted-actual)^2))
+}
 ```
 
 
@@ -2319,51 +2327,65 @@ set.seed(1)
 index <- sample(1:nrow(data_norm), 0.80 *nrow(data_norm))
 data_train <- data_norm[index,]
 data_test <- data_norm[-index,]
+
+
 ```
 
 #3.1 KNN 
 ```{r}
 #Our label is the Sales price, in col 1
-trainlabel <- data_train[,1]
-testlabel <- data_test[,1]
+# trainlabel <- data_train[,1]
+# testlabel <- data_test[,1]
 
 #Applying KNN
 ##test_pred <- knn(train = data_train[,2:39], test = data_test[,2:39],cl = data_train[,1], k=9)
 #Creating accuracy matrix
-##CrossTable(x=testlabel, y=test_pred, prop.chisq=FALSE)
+##CrossTable(x=testlabel, y=test_pred, prop.chisq=FALSE) # This makes no sense for non-class prediction (i.e Regression)
 ```
 Learned that KNN might not be a good suit for someone with categorical data within the DF. We shall need to look at regression.
+#3.2 Decision Tree
+```{r}
+set.seed(1)
+rf_data = modified_data
+rf_data$GarageYrBlt = unlist(lapply(modified_data$GarageYrBlt, as.numeric), use.name = FALSE )
+rf_data = subset(rf_data, select= -c(GarageYrBlt))
 
+rdata_norm = as.data.frame(lapply(rf_data[2:40], normalize))
+rdata_norm <- cbind(modified_data$SalePrice, rdata_norm)
+colnames(rdata_norm)[colnames(rdata_norm)=="modified_data$SalePrice"] <- "SalePrice"
+# training to 80%, test to 20%
+index <- sample(1:nrow(rdata_norm), 0.80 *nrow(rdata_norm))
+rdata_train <- rdata_norm[index,]
+rdata_test <- rdata_norm[-index,]
+
+tree_model <- tree(rdata_train$SalePrice ~ . , data = rdata_train)
+plot(tree_model)
+text(tree_model)
+tree_pred = predict(tree_model, rdata_test)
+
+MAE(data_test$SalePrice, tree_pred)
+RMSE(data_test$SalePrice, tree_pred)
+
+cv_tree = cv.tree(tree_model)
+names(cv_tree)
+plot (cv_tree$size, cv_tree$dev, type = "b", xlab = "Tree Size", ylab = "MSE")
+cv_tree$size[which.min(cv_tree$dev)]
+
+print("No need to prune, we are using size 9 tree")
+```
 #3.2 Random forest
 ```{r}
 set.seed(42)
 
-# rf_data = modified_data
-# rf_data$GarageYrBlt = unlist(lapply(modified_data$GarageYrBlt, as.numeric), use.name = FALSE )
-# rf_data = subset(rf_data, select= -c(GarageYrBlt))
-# 
-# rdata_norm = as.data.frame(lapply(rf_data[2:40], normalize))
-# rdata_norm <- cbind(modified_data$SalePrice, rdata_norm)
-# colnames(rdata_norm)[colnames(rdata_norm)=="modified_data$SalePrice"] <- "SalePrice"
-
-#Splitting training to 80%, test to 20%
-# index <- sample(1:nrow(rdata_norm), 0.80 *nrow(rdata_norm))
-# rdata_train <- rdata_norm[index,]
-# rdata_test <- rdata_norm[-index,]
-
-#model = randomForest(rdata_train$SalePrice ~ ., data = rdata_train, proximity = TRUE)
-
 m1 <- rpart(data_train$SalePrice ~ ., data = data_train, method = "anova")
 m1
-rpart.plot(m1, type=2, digits=3, fallen.leaves = TRUE)
+regress_plot <- rpart.plot(m1, type=2, digits=3, fallen.leaves = TRUE)
 
 p1 <- predict(m1, data_test)
-p1
 
-MAE <- function(actual, predicted){
-  mean(abs(actual- predicted))
-}
+# Two error checking methods.
 MAE(data_test$SalePrice, p1)
+RMSE(data_test$SalePrice, p1)
 ```
 
 #3.3 Regression
