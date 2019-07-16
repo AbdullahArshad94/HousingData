@@ -13,39 +13,41 @@ knitr::opts_chunk$set(echo = TRUE)
 ## ===== ===== ===== ===== ===== Capstone Project ===== ===== ===== ===== =====
 
 ```{r}
-install.packages("e1071",repos = "http://cran.us.r-project.org")
-install.packages("ggplot2",repos = "http://cran.us.r-project.org")
-install.packages("corrplot",repos = "http://cran.us.r-project.org")
-install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
-install.packages("klaR",repos = "http://cran.us.r-project.org")
-install.packages("cluster",repos = "http://cran.us.r-project.org")
-install.packages("fpc",repos = "http://cran.us.r-project.org")
-install.packages("class",repos = "http://cran.us.r-project.org")
-install.packages("rpart",repos = "http://cran.us.r-project.org")
-install.packages("cowplot")
-install.packages("randomForest")
-install.packages("rpart.plot")
-install.packages("tree",repos = "http://cran.us.r-project.org")
-library("tree")
-library("rpart.plot")
-library("cowplot")
-library("randomForest")
-library("rpart")
-library("class")
-library("fpc")
-library("cluster")
-library("plyr")
-library("klaR")
-library("ggplot2")
-library("e1071")
-library("corrplot")
-library("ggcorrplot")
-MAE <- function(actual, predicted){
-  mean(abs(actual- predicted))
-}
-RMSE <- function(actual, predicted){
-  sqrt(mean((predicted-actual)^2))
-}
+# install.packages("e1071",repos = "http://cran.us.r-project.org")
+# install.packages("ggplot2",repos = "http://cran.us.r-project.org")
+# install.packages("corrplot",repos = "http://cran.us.r-project.org")
+# install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
+# install.packages("klaR",repos = "http://cran.us.r-project.org")
+# install.packages("cluster",repos = "http://cran.us.r-project.org")
+# install.packages("fpc",repos = "http://cran.us.r-project.org")
+# install.packages("class",repos = "http://cran.us.r-project.org")
+# install.packages("rpart",repos = "http://cran.us.r-project.org")
+# install.packages("cowplot",repos = "http://cran.us.r-project.org")
+# install.packages("randomForest",repos = "http://cran.us.r-project.org")
+# install.packages("rpart.plot",repos = "http://cran.us.r-project.org")
+# install.packages("tree",repos = "http://cran.us.r-project.org")
+install.packages("glmnet")
+library(glmnet)
+# library("tree")
+# library("rpart.plot")
+# library("cowplot")
+# library("randomForest")
+# library("rpart")
+# library("class")
+# library("fpc")
+# library("cluster")
+# library("plyr")
+# library("klaR")
+# library("ggplot2")
+# library("e1071")
+# library("corrplot")
+# library("ggcorrplot")
+# MAE <- function(actual, predicted){
+#   mean(abs(actual- predicted))
+# }
+# RMSE <- function(actual, predicted){
+#   sqrt(mean((predicted-actual)^2))
+# }
 ```
 
 
@@ -2388,4 +2390,59 @@ MAE(data_test$SalePrice, p1)
 RMSE(data_test$SalePrice, p1)
 ```
 
-#3.3 Regression
+#3.3.1 Regression
+```{r}
+rregressive_model <- lm(rdata_train$SalePrice ~ ., data = rdata_train)
+#summary(rregressive_model)
+
+plot(rregressive_model)
+predict_reg = predict(rregressive_model, newdata = rdata_test)
+predict_reg
+MAE(rdata_test$SalePrice, predict_reg)
+RMSE(rdata_test$SalePrice, predict_reg)
+
+# Residual vs Fitted: No real pattern between Residuals and Fitted values. THis is good. Residuals arefactors our LR did not consider. We dont want those to have 
+# patterns. However, the increasing slop after the 250 000 mark is concerning.
+# QQ-plot: Not completly m=1 slope: not perfectly linear. Also the tails suggest that our model is light tailed, Still could be considered linear
+# Scale_Location: Here we clearly see the most of the data follow an non-linear form. Increasing 
+# FInally the Residual vs Leverage plot tells me there is not a highly influensial oberservation overly skewing our predictor. WHich is good
+```
+#3.3.2 Ridge, Lasso and elastic net regression
+```{r}
+set.seed(42)
+#both reduce vairance
+#if you know your variables all very usefuls, use ridge
+# Ridge alpha = 0.  you are desensitizing your model to the training data. Good to combat overfitting issue of best least squares line
+alpha0.fit <- cv.glmnet(x = data.matrix(data_train[,2:40]), y = data_train[,1], type.measure = "mse", alpha = 0, family= "gaussian")
+alpha0.predicted <- predict(alpha0.fit, s=alpha0.fit$lambda.1se, newx= data.matrix(data_test[,2:40]))
+# Lasso alpha = 1. similar equations, BUTT helps remove useless variables
+alpha1.fit <- cv.glmnet(x = data.matrix(data_train[,2:40]), y = data_train[,1], type.measure = "mse", alpha = 1, family= "gaussian")
+alpha1.predicted <- predict(alpha1.fit, s=alpha1.fit$lambda.1se, newx= data.matrix(data_test[,2:40]))
+
+MAE(data_test[,1],alpha0.predicted)
+RMSE(data_test[,1],alpha0.predicted)
+
+MAE(data_test[,1],alpha1.predicted)
+RMSE(data_test[,1],alpha1.predicted)
+# So we can see the differences in error between the weights of Ridge and Lasso
+# We will create a Loop to find the best alpha value!
+list.of.fits <- list()
+for (i in 0:10) {
+  fit.name <- paste0("alpha", i/10) #create name alpha with the alpha value as loop increments
+  list.of.fits[[fit.name]] <- cv.glmnet(x = data.matrix(data_train[,2:40]), y = data_train[,1], type.measure="mae", alpha=i/10, family="gaussian")
+}
+results <- data.frame() # Database for the resulting error matrix
+for (i in 0:10) {
+  fit.name <- paste0("alpha", i/10)
+  ## Use each model to predict 'y' given the Testing dataset
+  predicted <- predict(list.of.fits[[fit.name]], s=list.of.fits[[fit.name]]$lambda.1se, newx=data.matrix(data_test[,2:40]))
+  ## Error
+  RMSE = sqrt(mean((predicted-data_test[,1])^2))
+  
+  ## Results 
+  temp <- data.frame(alpha=i/10, RMSE=RMSE, fit.name=fit.name)
+  results <- rbind(results, temp)
+}
+results
+# We favour more of the lasso technique with an alpha of 0.8
+```
