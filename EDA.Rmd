@@ -26,8 +26,8 @@ knitr::opts_chunk$set(echo = TRUE)
 # install.packages("randomForest",repos = "http://cran.us.r-project.org")
 # install.packages("rpart.plot",repos = "http://cran.us.r-project.org")
 # install.packages("tree",repos = "http://cran.us.r-project.org")
-install.packages("glmnet")
-library(glmnet)
+# install.packages("glmnet")
+# library(glmnet)
 # library("tree")
 # library("rpart.plot")
 # library("cowplot")
@@ -42,12 +42,13 @@ library(glmnet)
 # library("e1071")
 # library("corrplot")
 # library("ggcorrplot")
-# MAE <- function(actual, predicted){
-#   mean(abs(actual- predicted))
-# }
-# RMSE <- function(actual, predicted){
-#   sqrt(mean((predicted-actual)^2))
-# }
+MAE <- function(actual, predicted){
+   mean(abs(actual- predicted))
+ }
+
+RMSE <- function(actual, predicted){
+    sqrt(mean((predicted-actual)^2))
+  }
 ```
 
 
@@ -2279,7 +2280,9 @@ print("it is a good idea we waited to remove the outliers, otherwise we would ha
 #after all our intial analysis, we can set the data back to our original name
 modified_data = temp
 modified_data = subset(modified_data, select=-c(SalePrice))
+
 modified_data$SalePrice = temp$SalePrice
+modified_data <- droplevels(modified_data)
 ```
 
 #2 - EDA
@@ -2287,6 +2290,8 @@ modified_data$SalePrice = temp$SalePrice
 #2.1 Normalization
 
 ```{r}
+#we do not need an id anymore
+modified_data = subset(modified_data, select=-c(Id))
 # Our Normalizing technique
 normalize <- function(x) {
   if (is.numeric(x)){
@@ -2295,16 +2300,17 @@ normalize <- function(x) {
     return (x)
   }
 }
-data_norm = as.data.frame(lapply(modified_data[2:40], normalize))
+data_norm = as.data.frame(lapply(modified_data[1:39], normalize))
 data_norm <- cbind(modified_data$SalePrice, data_norm)
 colnames(data_norm)[colnames(data_norm)=="modified_data$SalePrice"] <- "SalePrice"
+data_norm_noout <- subset(data_norm, data_norm$SalePrice < boxplot(data_norm$SalePrice)$stats[5,])
 ```
 
 #2.2 Clustering
 ```{r}
 numsonly <- unlist(lapply(modified_data, is.numeric))
-numarray = temp[,numsonly]
-numarray = subset(numarray, select = -c(Id))
+numarray = modified_data[,numsonly]
+#numarray = subset(numarray, select = -c(Id))
 fit = kmeans(numarray,4)
 plotcluster(numarray,fit$cluster)
 
@@ -2324,12 +2330,32 @@ In fact, these clusters are not meaningful for the numerical only attributes, ei
 #3.0 Training and test set Split
 
 ```{r}
-set.seed(1)
+set.seed(11)
 #Splitting training to 80%, test to 20%
-index <- sample(1:nrow(data_norm), 0.80 *nrow(data_norm))
+index <- sample(1:nrow(data_norm_noout), 0.80 *nrow(data_norm_noout))
 data_train <- data_norm[index,]
 data_test <- data_norm[-index,]
 
+data_train_noout <- data_norm_noout[index,]
+data_test_noout <- data_norm_noout[-index,]
+
+rf_data = modified_data
+rf_data$GarageYrBlt = unlist(lapply(modified_data$GarageYrBlt, as.numeric), use.name = FALSE )
+rf_data = subset(rf_data, select= -c(GarageYrBlt))
+
+rdata_norm = as.data.frame(lapply(rf_data[1:39], normalize))
+rdata_norm <- cbind(modified_data$SalePrice, rdata_norm)
+colnames(rdata_norm)[colnames(rdata_norm)=="modified_data$SalePrice"] <- "SalePrice"
+# training to 80%, test to 20%
+index <- sample(1:nrow(rdata_norm), 0.80 *nrow(rdata_norm))
+rdata_train <- rdata_norm[index,]
+rdata_test <- rdata_norm[-index,]
+
+rdata_norm_noout <- subset(rdata_norm, rdata_norm$SalePrice < boxplot(rdata_norm$SalePrice)$stats[5,])
+# training to 80%, test to 20%
+index <- sample(1:nrow(rdata_norm_noout), 0.80 *nrow(rdata_norm_noout))
+rdata_train_noout <- rdata_norm_noout[index,]
+rdata_test_noout <- rdata_norm_noout[-index,]
 
 ```
 
@@ -2345,28 +2371,16 @@ data_test <- data_norm[-index,]
 ##CrossTable(x=testlabel, y=test_pred, prop.chisq=FALSE) # This makes no sense for non-class prediction (i.e Regression)
 ```
 Learned that KNN might not be a good suit for someone with categorical data within the DF. We shall need to look at regression.
-#3.2 Decision Tree
+#3.2.1 Decision Tree 1.
 ```{r}
-set.seed(1)
-rf_data = modified_data
-rf_data$GarageYrBlt = unlist(lapply(modified_data$GarageYrBlt, as.numeric), use.name = FALSE )
-rf_data = subset(rf_data, select= -c(GarageYrBlt))
-
-rdata_norm = as.data.frame(lapply(rf_data[2:40], normalize))
-rdata_norm <- cbind(modified_data$SalePrice, rdata_norm)
-colnames(rdata_norm)[colnames(rdata_norm)=="modified_data$SalePrice"] <- "SalePrice"
-# training to 80%, test to 20%
-index <- sample(1:nrow(rdata_norm), 0.80 *nrow(rdata_norm))
-rdata_train <- rdata_norm[index,]
-rdata_test <- rdata_norm[-index,]
-
+set.seed(11)
 tree_model <- tree(rdata_train$SalePrice ~ . , data = rdata_train)
 plot(tree_model)
 text(tree_model)
 tree_pred = predict(tree_model, rdata_test)
 
-MAE(data_test$SalePrice, tree_pred)
-RMSE(data_test$SalePrice, tree_pred)
+MAE(rdata_test$SalePrice, tree_pred)
+RMSE(rdata_test$SalePrice, tree_pred)
 
 cv_tree = cv.tree(tree_model)
 names(cv_tree)
@@ -2375,9 +2389,9 @@ cv_tree$size[which.min(cv_tree$dev)]
 
 print("No need to prune, we are using size 9 tree")
 ```
-#3.2 Random forest
+#3.2.2 Decision Tree 2.
 ```{r}
-set.seed(42)
+set.seed(11)
 
 m1 <- rpart(data_train$SalePrice ~ ., data = data_train, method = "anova")
 m1
@@ -2389,17 +2403,30 @@ p1 <- predict(m1, data_test)
 MAE(data_test$SalePrice, p1)
 RMSE(data_test$SalePrice, p1)
 ```
-
-#3.3.1 Regression
+#3.3 Random Forest
 ```{r}
+set.seed(11)
+model_RF<- randomForest(rdata_train$SalePrice ~ ., data = rdata_train, proximity=TRUE)
+model_RF
+rf_predict = predict(model_RF,rdata_test)
+
+RMSE(rdata_test$SalePrice,rf_predict)
+MAE(rdata_test$SalePrice,rf_predict)
+# Increasing the tree coutn doesnt significantly decrease the errors
+```
+
+#3.4.1 Regression
+```{r}
+## ## PROBLEM HERE BECAUSE THERE ARE CASES WHERE FACTORS IN TEST ARE NOT PRESENT IN TRAINING
+set.seed(11)
 rregressive_model <- lm(rdata_train$SalePrice ~ ., data = rdata_train)
 #summary(rregressive_model)
 
 plot(rregressive_model)
-predict_reg = predict(rregressive_model, newdata = rdata_test)
-predict_reg
-MAE(rdata_test$SalePrice, predict_reg)
-RMSE(rdata_test$SalePrice, predict_reg)
+# predict_reg = predict(rregressive_model, newdata =  rdata_test)
+# predict_reg
+# MAE(rdata_test$SalePrice, predict_reg)
+# RMSE(rdata_test$SalePrice, predict_reg)
 
 # Residual vs Fitted: No real pattern between Residuals and Fitted values. THis is good. Residuals arefactors our LR did not consider. We dont want those to have 
 # patterns. However, the increasing slop after the 250 000 mark is concerning.
@@ -2407,9 +2434,9 @@ RMSE(rdata_test$SalePrice, predict_reg)
 # Scale_Location: Here we clearly see the most of the data follow an non-linear form. Increasing 
 # FInally the Residual vs Leverage plot tells me there is not a highly influensial oberservation overly skewing our predictor. WHich is good
 ```
-#3.3.2 Ridge, Lasso and elastic net regression
+#3.4.2 Ridge, Lasso and elastic net regression
 ```{r}
-set.seed(42)
+set.seed(11)
 #both reduce vairance
 #if you know your variables all very usefuls, use ridge
 # Ridge alpha = 0.  you are desensitizing your model to the training data. Good to combat overfitting issue of best least squares line
@@ -2444,5 +2471,44 @@ for (i in 0:10) {
   results <- rbind(results, temp)
 }
 results
-# We favour more of the lasso technique with an alpha of 0.8
+# We favour more of the lasso technique with an alpha of 0.6
+
+# Lasso alpha = 1. similar equations, BUTT helps remove useless variables
+ENR <- cv.glmnet(x = data.matrix(data_train[,2:40]), y = data_train[,1], type.measure = "mse", alpha = 0.6, family= "gaussian")
+ENR.predicted <- predict(ENR, s=ENR$lambda.1se, newx= data.matrix(data_test[,2:40]))
 ```
+
+# 4 - Evaluating Models
+
+# 4.0 Comparing models
+```{r}
+print("For Regression Models RMSE and MAE are commonly used when comparing regression models")
+temp_DT1 <- data.frame(Model="Decision Tree 1", RMSE=RMSE(rdata_test$SalePrice, tree_pred), MAE= MAE(rdata_test$SalePrice, tree_pred))
+temp_DT2 <- data.frame(Model="Decision Tree 2", RMSE=RMSE(data_test$SalePrice, p1), MAE= MAE(data_test$SalePrice, p1))
+temp_RF <- data.frame(Model="Random Forest", RMSE=RMSE(rdata_test$SalePrice,rf_predict), MAE= MAE(rdata_test$SalePrice,rf_predict))
+temp_ENReg <- data.frame(Model="Elastic Net Regression", RMSE=RMSE(data_test$SalePrice,ENR.predicted), MAE= MAE(data_test$SalePrice,ENR.predicted))
+err_results <- rbind(temp_DT1, temp_DT2, temp_RF, temp_ENReg)
+err_results
+```
+
+# 4.1 Lets remove those outliers and re run models!
+```{r}
+noout_DT1 <- tree(rdata_train_noout$SalePrice ~ . , data = rdata_train_noout)
+DT1_pred <- predict(noout_DT1, rdata_test_noout)
+
+# Removed 2nd type of DT because we saw that it performed worse than the other DT.
+
+noout_RF<- randomForest(rdata_train_noout$SalePrice ~ ., data = rdata_train_noout, proximity=TRUE)
+rf_pred = predict(noout_RF,rdata_test_noout)
+
+noout_ENR <- cv.glmnet(x = data.matrix(data_train_noout[,2:40]), y = data_train_noout[,1], type.measure = "mse", alpha = 0.6, family= "gaussian")
+END_pred <- predict(noout_ENR, s=noout_ENR$lambda.1se, newx= data.matrix(data_test_noout[,2:40]))
+
+
+DT1 <- data.frame(Model="Decision Tree", RMSE=RMSE(rdata_test_noout$SalePrice, DT1_pred), MAE= MAE(rdata_test_noout$SalePrice, DT1_pred))
+RF <- data.frame(Model="Random Forest", RMSE=RMSE(rdata_test_noout$SalePrice,rf_pred), MAE= MAE(rdata_test_noout$SalePrice,rf_pred))
+ENReg <- data.frame(Model="Elastic Net Regression", RMSE=RMSE(data_test_noout$SalePrice,END_pred), MAE= MAE(data_test_noout$SalePrice,END_pred))
+error_results <- rbind(DT1,RF,ENReg)
+error_results
+```
+It is evident that removing those outliers definetly helped imporve our Regression Tree and Regression Forest, however our Elastic net regression did not chnage too much. 
