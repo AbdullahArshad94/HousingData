@@ -300,8 +300,8 @@ modified_data$TotRmsAbvGrd <- formatC(modified_data$TotRmsAbvGrd)
 modified_data$Fireplaces <- formatC(modified_data$Fireplaces)
 modified_data$MoSold <- formatC(modified_data$MoSold)
 modified_data$YrSold <- formatC(modified_data$YrSold)
-#modified_data$OverallQual <- formatC(modified_data$OverallQual)
-#modified_data$OverallCond <- formatC(modified_data$OverallCond)
+modified_data$OverallQual <- formatC(modified_data$OverallQual)
+modified_data$OverallCond <- formatC(modified_data$OverallCond)
 ```
 
 # 1.1.4 Reducing the levels on for Categorical attributes and dealing with outlier for Quantitative attributes. Fixing distributions of categorical variables
@@ -2280,7 +2280,7 @@ print("it is a good idea we waited to remove the outliers, otherwise we would ha
 #after all our intial analysis, we can set the data back to our original name
 modified_data = temp
 modified_data = subset(modified_data, select=-c(SalePrice))
-
+modified_data = subset(modified_data, select=-c(YearRemodAdd))
 modified_data$SalePrice = temp$SalePrice
 modified_data <- droplevels(modified_data)
 ```
@@ -2300,7 +2300,7 @@ normalize <- function(x) {
     return (x)
   }
 }
-data_norm = as.data.frame(lapply(modified_data[1:39], normalize))
+data_norm = as.data.frame(lapply(modified_data[1:38], normalize))
 data_norm <- cbind(modified_data$SalePrice, data_norm)
 colnames(data_norm)[colnames(data_norm)=="modified_data$SalePrice"] <- "SalePrice"
 data_norm_noout <- subset(data_norm, data_norm$SalePrice < boxplot(data_norm$SalePrice)$stats[5,])
@@ -2343,7 +2343,7 @@ rf_data = modified_data
 rf_data$GarageYrBlt = unlist(lapply(modified_data$GarageYrBlt, as.numeric), use.name = FALSE )
 rf_data = subset(rf_data, select= -c(GarageYrBlt))
 
-rdata_norm = as.data.frame(lapply(rf_data[1:39], normalize))
+rdata_norm = as.data.frame(lapply(rf_data[1:38], normalize))
 rdata_norm <- cbind(modified_data$SalePrice, rdata_norm)
 colnames(rdata_norm)[colnames(rdata_norm)=="modified_data$SalePrice"] <- "SalePrice"
 # training to 80%, test to 20%
@@ -2420,13 +2420,7 @@ MAE(rdata_test$SalePrice,rf_predict)
 ## ## PROBLEM HERE BECAUSE THERE ARE CASES WHERE FACTORS IN TEST ARE NOT PRESENT IN TRAINING
 set.seed(11)
 rregressive_model <- lm(rdata_train$SalePrice ~ ., data = rdata_train)
-#summary(rregressive_model)
-
 plot(rregressive_model)
-# predict_reg = predict(rregressive_model, newdata =  rdata_test)
-# predict_reg
-# MAE(rdata_test$SalePrice, predict_reg)
-# RMSE(rdata_test$SalePrice, predict_reg)
 
 # Residual vs Fitted: No real pattern between Residuals and Fitted values. THis is good. Residuals arefactors our LR did not consider. We dont want those to have 
 # patterns. However, the increasing slop after the 250 000 mark is concerning.
@@ -2440,11 +2434,11 @@ set.seed(11)
 #both reduce vairance
 #if you know your variables all very usefuls, use ridge
 # Ridge alpha = 0.  you are desensitizing your model to the training data. Good to combat overfitting issue of best least squares line
-alpha0.fit <- cv.glmnet(x = data.matrix(data_train[,2:40]), y = data_train[,1], type.measure = "mse", alpha = 0, family= "gaussian")
-alpha0.predicted <- predict(alpha0.fit, s=alpha0.fit$lambda.1se, newx= data.matrix(data_test[,2:40]))
+alpha0.fit <- cv.glmnet(x = data.matrix(data_train[,2:39]), y = data_train[,1], type.measure = "mse", alpha = 0, family= "gaussian")
+alpha0.predicted <- predict(alpha0.fit, s=alpha0.fit$lambda.1se, newx= data.matrix(data_test[,2:39]))
 # Lasso alpha = 1. similar equations, BUTT helps remove useless variables
-alpha1.fit <- cv.glmnet(x = data.matrix(data_train[,2:40]), y = data_train[,1], type.measure = "mse", alpha = 1, family= "gaussian")
-alpha1.predicted <- predict(alpha1.fit, s=alpha1.fit$lambda.1se, newx= data.matrix(data_test[,2:40]))
+alpha1.fit <- cv.glmnet(x = data.matrix(data_train[,2:39]), y = data_train[,1], type.measure = "mse", alpha = 1, family= "gaussian")
+alpha1.predicted <- predict(alpha1.fit, s=alpha1.fit$lambda.1se, newx= data.matrix(data_test[,2:39]))
 
 MAE(data_test[,1],alpha0.predicted)
 RMSE(data_test[,1],alpha0.predicted)
@@ -2456,13 +2450,13 @@ RMSE(data_test[,1],alpha1.predicted)
 list.of.fits <- list()
 for (i in 0:10) {
   fit.name <- paste0("alpha", i/10) #create name alpha with the alpha value as loop increments
-  list.of.fits[[fit.name]] <- cv.glmnet(x = data.matrix(data_train[,2:40]), y = data_train[,1], type.measure="mae", alpha=i/10, family="gaussian")
+  list.of.fits[[fit.name]] <- cv.glmnet(x = data.matrix(data_train[,2:39]), y = data_train[,1], type.measure="mae", alpha=i/10, family="gaussian")
 }
 results <- data.frame() # Database for the resulting error matrix
 for (i in 0:10) {
   fit.name <- paste0("alpha", i/10)
   ## Use each model to predict 'y' given the Testing dataset
-  predicted <- predict(list.of.fits[[fit.name]], s=list.of.fits[[fit.name]]$lambda.1se, newx=data.matrix(data_test[,2:40]))
+  predicted <- predict(list.of.fits[[fit.name]], s=list.of.fits[[fit.name]]$lambda.1se, newx=data.matrix(data_test[,2:39]))
   ## Error
   RMSE = sqrt(mean((predicted-data_test[,1])^2))
   
@@ -2474,8 +2468,8 @@ results
 # We favour more of the lasso technique with an alpha of 0.6
 
 # Lasso alpha = 1. similar equations, BUTT helps remove useless variables
-ENR <- cv.glmnet(x = data.matrix(data_train[,2:40]), y = data_train[,1], type.measure = "mse", alpha = 0.6, family= "gaussian")
-ENR.predicted <- predict(ENR, s=ENR$lambda.1se, newx= data.matrix(data_test[,2:40]))
+ENR <- cv.glmnet(x = data.matrix(data_train[,2:39]), y = data_train[,1], type.measure = "mse", alpha = 0.6, family= "gaussian")
+ENR.predicted <- predict(ENR, s=ENR$lambda.1se, newx= data.matrix(data_test[,2:39]))
 ```
 
 # 4 - Evaluating Models
@@ -2501,8 +2495,8 @@ DT1_pred <- predict(noout_DT1, rdata_test_noout)
 noout_RF<- randomForest(rdata_train_noout$SalePrice ~ ., data = rdata_train_noout, proximity=TRUE)
 rf_pred = predict(noout_RF,rdata_test_noout)
 
-noout_ENR <- cv.glmnet(x = data.matrix(data_train_noout[,2:40]), y = data_train_noout[,1], type.measure = "mse", alpha = 0.6, family= "gaussian")
-END_pred <- predict(noout_ENR, s=noout_ENR$lambda.1se, newx= data.matrix(data_test_noout[,2:40]))
+noout_ENR <- cv.glmnet(x = data.matrix(data_train_noout[,2:39]), y = data_train_noout[,1], type.measure = "mse", alpha = 0.6, family= "gaussian")
+END_pred <- predict(noout_ENR, s=noout_ENR$lambda.1se, newx= data.matrix(data_test_noout[,2:39]))
 
 
 DT1 <- data.frame(Model="Decision Tree", RMSE=RMSE(rdata_test_noout$SalePrice, DT1_pred), MAE= MAE(rdata_test_noout$SalePrice, DT1_pred))
@@ -2511,4 +2505,15 @@ ENReg <- data.frame(Model="Elastic Net Regression", RMSE=RMSE(data_test_noout$Sa
 error_results <- rbind(DT1,RF,ENReg)
 error_results
 ```
+```{r}
+#Looking into the new data without outliers
+outregressive_model <- lm(rdata_train_noout$SalePrice ~ ., data = rdata_train_noout)
+plot(outregressive_model)
+
+# Residual vs Fitted: There is a pattern between Residuals and Fitted values. THis is not good. this should be random. BAD
+# QQ-plot: We wanted this to be 
+# Scale_Location: Here we clearly see the most of the data follow an non-linear form. Increasing 
+# FInally the Residual vs Leverage plot tells me there is not a highly influensial oberservation overly skewing our predictor. WHich is good
+```
+
 It is evident that removing those outliers definetly helped imporve our Regression Tree and Regression Forest, however our Elastic net regression did not chnage too much. 
