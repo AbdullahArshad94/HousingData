@@ -2,8 +2,10 @@
 title: "EDA"
 author: "Abdullah"
 date: "May 8, 2019"
-output: 
- word_document: default 
+output:
+  html_document:
+    df_print: paged
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,35 +15,35 @@ knitr::opts_chunk$set(echo = TRUE)
 ## ===== ===== ===== ===== ===== Capstone Project ===== ===== ===== ===== =====
 
 ```{r}
-# install.packages("e1071",repos = "http://cran.us.r-project.org")
-# install.packages("ggplot2",repos = "http://cran.us.r-project.org")
-# install.packages("corrplot",repos = "http://cran.us.r-project.org")
-# install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
-# install.packages("klaR",repos = "http://cran.us.r-project.org")
-# install.packages("cluster",repos = "http://cran.us.r-project.org")
-# install.packages("fpc",repos = "http://cran.us.r-project.org")
-# install.packages("class",repos = "http://cran.us.r-project.org")
-# install.packages("rpart",repos = "http://cran.us.r-project.org")
-# install.packages("cowplot",repos = "http://cran.us.r-project.org")
-# install.packages("randomForest",repos = "http://cran.us.r-project.org")
-# install.packages("rpart.plot",repos = "http://cran.us.r-project.org")
-# install.packages("tree",repos = "http://cran.us.r-project.org")
-# install.packages("glmnet")
-# library(glmnet)
-# library("tree")
-# library("rpart.plot")
-# library("cowplot")
-# library("randomForest")
-# library("rpart")
-# library("class")
-# library("fpc")
-# library("cluster")
-# library("plyr")
-# library("klaR")
-# library("ggplot2")
-# library("e1071")
-# library("corrplot")
-# library("ggcorrplot")
+install.packages("e1071",repos = "http://cran.us.r-project.org")
+install.packages("ggplot2",repos = "http://cran.us.r-project.org")
+install.packages("corrplot",repos = "http://cran.us.r-project.org")
+install.packages("ggcorrplot",repos = "http://cran.us.r-project.org")
+install.packages("klaR",repos = "http://cran.us.r-project.org")
+install.packages("cluster",repos = "http://cran.us.r-project.org")
+install.packages("fpc",repos = "http://cran.us.r-project.org")
+install.packages("class",repos = "http://cran.us.r-project.org")
+install.packages("rpart",repos = "http://cran.us.r-project.org")
+install.packages("cowplot",repos = "http://cran.us.r-project.org")
+install.packages("randomForest",repos = "http://cran.us.r-project.org")
+install.packages("rpart.plot",repos = "http://cran.us.r-project.org")
+install.packages("tree",repos = "http://cran.us.r-project.org")
+install.packages("glmnet",repos = "http://cran.us.r-project.org")
+library(glmnet)
+library("tree")
+library("rpart.plot")
+library("cowplot")
+library("randomForest")
+library("rpart")
+library("class")
+library("fpc")
+library("cluster")
+library("plyr")
+library("klaR")
+library("ggplot2")
+library("e1071")
+library("corrplot")
+library("ggcorrplot")
 MAE <- function(actual, predicted){
    mean(abs(actual- predicted))
  }
@@ -2074,7 +2076,7 @@ numONLY = temp[,nums]
 aa<-cor(numONLY)
 ggcorrplot(aa)
 #We are only intrested in the Sales price of the matrix
-aa[,26]
+aa[,14]
 ```
 There are some conclusions we can make.
 
@@ -2357,6 +2359,13 @@ index <- sample(1:nrow(rdata_norm_noout), 0.80 *nrow(rdata_norm_noout))
 rdata_train_noout <- rdata_norm_noout[index,]
 rdata_test_noout <- rdata_norm_noout[-index,]
 
+MAE <- function(actual, predicted){
+   mean(abs(actual- predicted))
+ }
+
+RMSE <- function(actual, predicted){
+    sqrt(mean((predicted-actual)^2))
+  }
 ```
 
 #3.1 KNN 
@@ -2371,7 +2380,7 @@ rdata_test_noout <- rdata_norm_noout[-index,]
 ##CrossTable(x=testlabel, y=test_pred, prop.chisq=FALSE) # This makes no sense for non-class prediction (i.e Regression)
 ```
 Learned that KNN might not be a good suit for someone with categorical data within the DF. We shall need to look at regression.
-#3.2.1 Decision Tree 1.
+shi#3.2.1 Decision Tree 1.
 ```{r}
 set.seed(11)
 tree_model <- tree(rdata_train$SalePrice ~ . , data = rdata_train)
@@ -2476,6 +2485,13 @@ ENR.predicted <- predict(ENR, s=ENR$lambda.1se, newx= data.matrix(data_test[,2:3
 
 # 4.0 Comparing models
 ```{r}
+MAE <- function(actual, predicted){
+   mean(abs(actual- predicted))
+ }
+
+RMSE <- function(actual, predicted){
+    sqrt(mean((predicted-actual)^2))
+  }
 print("For Regression Models RMSE and MAE are commonly used when comparing regression models")
 temp_DT1 <- data.frame(Model="Decision Tree 1", RMSE=RMSE(rdata_test$SalePrice, tree_pred), MAE= MAE(rdata_test$SalePrice, tree_pred))
 temp_DT2 <- data.frame(Model="Decision Tree 2", RMSE=RMSE(data_test$SalePrice, p1), MAE= MAE(data_test$SalePrice, p1))
@@ -2487,6 +2503,13 @@ err_results
 
 # 4.1 Lets remove those outliers and re run models!
 ```{r}
+MAE <- function(actual, predicted){
+   mean(abs(actual- predicted))
+ }
+
+RMSE <- function(actual, predicted){
+    sqrt(mean((predicted-actual)^2))
+  }
 noout_DT1 <- tree(rdata_train_noout$SalePrice ~ . , data = rdata_train_noout)
 DT1_pred <- predict(noout_DT1, rdata_test_noout)
 
